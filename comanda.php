@@ -883,7 +883,7 @@ function aggiornaInterfacciaPietanze(data) {
     const contenitorePietanze = document.querySelector('.categoria .grid');
     const headerCategoria = document.querySelector('.categoria h3');
     const infoPaginazione = document.querySelector('.categoria .flex.justify-between .text-sm');
-    const paginazioneContainer = document.querySelector('.categoria .mt-4.flex.justify-between');
+    const paginazioneContainer = document.getElementById('paginazione-pietanze');
 
     if (!contenitorePietanze || !data.pietanze) return;
 
@@ -896,6 +896,7 @@ function aggiornaInterfacciaPietanze(data) {
         `;
     }
 
+    // Aggiorna info paginazione nell'header della categoria (se presente)
     if (infoPaginazione && data.total_pietanze_pages > 1) {
         infoPaginazione.textContent = `Pagina ${data.pietanze_page} di ${data.total_pietanze_pages}`;
     }
@@ -928,31 +929,40 @@ function aggiornaInterfacciaPietanze(data) {
         }
     });
 
+    // Aggiorna la paginazione usando l'ID specifico
     if (paginazioneContainer) {
         const conteggioDiv = paginazioneContainer.querySelector('.text-sm.text-gray-700');
         const pulsantiDiv = paginazioneContainer.querySelector('.flex.gap-2');
 
         if (conteggioDiv) {
-            conteggioDiv.textContent = `Mostrando ${data.pietanze.length} di ${data.total_pietanze} pietanze`;
+            if (data.total_pietanze_pages > 1) {
+                conteggioDiv.textContent = `Mostrando ${data.pietanze.length} di ${data.total_pietanze} pietanze`;
+            } else {
+                conteggioDiv.textContent = `${data.pietanze.length} pietanze`;
+            }
         }
 
         if (pulsantiDiv) {
             pulsantiDiv.innerHTML = '';
 
-            if (data.pietanze_page > 1) {
-                const btnPrecedente = document.createElement('button');
-                btnPrecedente.className = 'bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300';
-                btnPrecedente.textContent = '← Precedente';
-                btnPrecedente.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page - 1);
-                pulsantiDiv.appendChild(btnPrecedente);
-            }
+            if (data.total_pietanze_pages > 1) {
+                if (data.pietanze_page > 1) {
+                    const btnPrecedente = document.createElement('button');
+                    btnPrecedente.type = 'button';
+                    btnPrecedente.className = 'bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300';
+                    btnPrecedente.textContent = '← Precedente';
+                    btnPrecedente.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page - 1);
+                    pulsantiDiv.appendChild(btnPrecedente);
+                }
 
-            if (data.pietanze_page < data.total_pietanze_pages) {
-                const btnSuccessivo = document.createElement('button');
-                btnSuccessivo.className = 'bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600';
-                btnSuccessivo.textContent = 'Successivo →';
-                btnSuccessivo.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page + 1);
-                pulsantiDiv.appendChild(btnSuccessivo);
+                if (data.pietanze_page < data.total_pietanze_pages) {
+                    const btnSuccessivo = document.createElement('button');
+                    btnSuccessivo.type = 'button';
+                    btnSuccessivo.className = 'bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600';
+                    btnSuccessivo.textContent = 'Successivo →';
+                    btnSuccessivo.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page + 1);
+                    pulsantiDiv.appendChild(btnSuccessivo);
+                }
             }
         }
     }
