@@ -1,8 +1,17 @@
-# Usa PHP 8.2 con Apache
 FROM php:8.2-apache
 
-# Copia tutti i file del tuo progetto dentro la cartella web di Apache
+# Abilita mod_rewrite se serve
+RUN a2enmod rewrite
+
+# Copia i file del progetto
 COPY . /var/www/html/
 
-# Espone la porta 80 (Render la userà per le richieste HTTP)
-EXPOSE 80
+# Usa la porta dinamica di Render
+ARG PORT
+ENV PORT=${PORT}
+RUN sed -i "s/80/${PORT}/g" /etc/apache2/ports.conf \
+ && sed -i "s/:80/:${PORT}/g" /etc/apache2/sites-enabled/000-default.conf
+
+EXPOSE ${PORT}
+
+CMD ["apache2-foreground"]
