@@ -1,17 +1,20 @@
 FROM php:8.2-apache
 
-# Abilita mod_rewrite se serve
-RUN a2enmod rewrite
+# Imposta la working dir
+WORKDIR /var/www/html
 
 # Copia i file del progetto
 COPY . /var/www/html/
 
-# Usa la porta dinamica di Render
-ARG PORT
-ENV PORT=${PORT}
-RUN sed -i "s/80/${PORT}/g" /etc/apache2/ports.conf \
- && sed -i "s/:80/:${PORT}/g" /etc/apache2/sites-enabled/000-default.conf
+# Installa estensioni PHP necessarie
+RUN docker-php-ext-install mysqli pdo pdo_mysql \
+    && docker-php-ext-enable mysqli pdo_mysql
 
-EXPOSE ${PORT}
+# Abilita mod_rewrite (utile per molti CMS/Framework)
+RUN a2enmod rewrite
 
+# Espone la porta 80
+EXPOSE 80
+
+# Avvia Apache
 CMD ["apache2-foreground"]
