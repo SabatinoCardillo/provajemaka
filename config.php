@@ -1,12 +1,11 @@
 <?php
-$h = "0.tcp.sa.ngrok.io";   // host pubblico ngrok
-$port = 15075;               // porta pubblica ngrok
-$u = "sito_user";            // l'utente MySQL creato sulla VPS
-$p = "password_sicura";      // la password dell'utente
+$h = "mysql-jemaka.alwaysdata.net";   // host pubblico ngrok
+$u = "jemaka";            // l'utente MySQL creato sulla VPS
+$p = "Saba270704!";      // la password dell'utente
 $db = "jemaka_clienti";             // il nome del database sulla VPS
 
 // Connessione con porta personalizzata
-$conn = mysqli_connect($h, $u, $p, $db, $port);
+$conn = mysqli_connect($h, $u, $p, $db);
 
 if(!$conn){
     die ("Connessione fallita: " . mysqli_connect_error());
