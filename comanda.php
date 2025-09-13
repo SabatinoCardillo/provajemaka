@@ -524,17 +524,35 @@ if (isset($_GET['error'])) {
                                 <?php endforeach; ?>
                             </div>
 
-                            <!-- Paginazione Pietanze -->
-                            <?php if ($total_pietanze_pages > 1): ?>
-                                <div class="mt-4 flex justify-between items-center">
-                                    <div class="text-sm text-gray-700">
+                            <!-- Paginazione Pietanze CORRETTA -->
+                            <div id="paginazione-pietanze" class="mt-4 flex justify-between items-center">
+                                <div class="text-sm text-gray-700">
+                                    <?php if ($total_pietanze_pages > 1): ?>
                                         Mostrando <?php echo count($pietanze_paginata); ?> di <?php echo $total_pietanze; ?> pietanze
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <!-- I pulsanti saranno sostituiti da JavaScript -->
-                                    </div>
+                                    <?php else: ?>
+                                        <?php echo count($pietanze_paginata); ?> pietanze
+                                    <?php endif; ?>
                                 </div>
-                            <?php endif; ?>
+                                <div class="flex gap-2">
+                                    <?php if ($total_pietanze_pages > 1): ?>
+                                        <?php if ($pietanze_page > 1): ?>
+                                            <button type="button" 
+                                                    onclick="caricaPietanzeAjax('<?php echo htmlspecialchars($categoria_selezionata, ENT_QUOTES); ?>', <?php echo $pietanze_page - 1; ?>)"
+                                                    class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300">
+                                                ← Precedente
+                                            </button>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($pietanze_page < $total_pietanze_pages): ?>
+                                            <button type="button" 
+                                                    onclick="caricaPietanzeAjax('<?php echo htmlspecialchars($categoria_selezionata, ENT_QUOTES); ?>', <?php echo $pietanze_page + 1; ?>)"
+                                                    class="bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
+                                                Successivo →
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     <?php elseif ($categoria_selezionata): ?>
                         <div class="text-center py-8 text-gray-500">
@@ -882,11 +900,32 @@ function caricaPietanzeAjax(categoria, pagina = 1) {
 function aggiornaInterfacciaPietanze(data) {
     const contenitorePietanze = document.querySelector('.categoria .grid');
     const headerCategoria = document.querySelector('.categoria h3');
-    const infoPaginazione = document.querySelector('.categoria .flex.justify-between .text-sm');
-    const paginazioneContainer = document.getElementById('paginazione-pietanze');
+    
+    // CORREZIONE: Cercare il contenitore corretto per la paginazione
+    let paginazioneContainer = document.getElementById('paginazione-pietanze');
+    
+    // Se non esiste, crearlo
+    if (!paginazioneContainer) {
+        paginazioneContainer = document.createElement('div');
+        paginazioneContainer.id = 'paginazione-pietanze';
+        paginazioneContainer.className = 'mt-4 flex justify-between items-center';
+        
+        // Inserirlo dopo il grid delle pietanze
+        const categoriaDiv = document.querySelector('.categoria');
+        if (categoriaDiv) {
+            categoriaDiv.appendChild(paginazioneContainer);
+        }
+        
+        // Creare la struttura interna
+        paginazioneContainer.innerHTML = `
+            <div class="text-sm text-gray-700"></div>
+            <div class="flex gap-2"></div>
+        `;
+    }
 
     if (!contenitorePietanze || !data.pietanze) return;
 
+    // Aggiorna header categoria
     if (headerCategoria && data.categoria_selezionata) {
         headerCategoria.innerHTML = `
             ${escapeHtml(data.categoria_selezionata)} 
@@ -896,11 +935,7 @@ function aggiornaInterfacciaPietanze(data) {
         `;
     }
 
-    // Aggiorna info paginazione nell'header della categoria (se presente)
-    if (infoPaginazione && data.total_pietanze_pages > 1) {
-        infoPaginazione.textContent = `Pagina ${data.pietanze_page} di ${data.total_pietanze_pages}`;
-    }
-
+    // Pulisce e ricostruisce il contenitore delle pietanze
     contenitorePietanze.innerHTML = '';
     data.pietanze.forEach(pietanza => {
         const div = document.createElement('div');
@@ -922,6 +957,7 @@ function aggiornaInterfacciaPietanze(data) {
         `;
         contenitorePietanze.appendChild(div);
 
+        // Ripristina i contatori esistenti
         const contatore = contatori[pietanza.id] || 0;
         const counterElement = document.getElementById(`counter-${pietanza.id}`);
         if (counterElement) {
@@ -929,40 +965,40 @@ function aggiornaInterfacciaPietanze(data) {
         }
     });
 
-    // Aggiorna la paginazione usando l'ID specifico
-    if (paginazioneContainer) {
-        const conteggioDiv = paginazioneContainer.querySelector('.text-sm.text-gray-700');
-        const pulsantiDiv = paginazioneContainer.querySelector('.flex.gap-2');
+    // Aggiorna la paginazione
+    const conteggioDiv = paginazioneContainer.querySelector('.text-sm.text-gray-700');
+    const pulsantiDiv = paginazioneContainer.querySelector('.flex.gap-2');
 
-        if (conteggioDiv) {
-            if (data.total_pietanze_pages > 1) {
-                conteggioDiv.textContent = `Mostrando ${data.pietanze.length} di ${data.total_pietanze} pietanze`;
-            } else {
-                conteggioDiv.textContent = `${data.pietanze.length} pietanze`;
-            }
+    if (conteggioDiv) {
+        if (data.total_pietanze_pages > 1) {
+            conteggioDiv.textContent = `Mostrando ${data.pietanze.length} di ${data.total_pietanze} pietanze`;
+        } else {
+            conteggioDiv.textContent = `${data.pietanze.length} pietanze`;
         }
+    }
 
-        if (pulsantiDiv) {
-            pulsantiDiv.innerHTML = '';
+    if (pulsantiDiv) {
+        pulsantiDiv.innerHTML = '';
 
-            if (data.total_pietanze_pages > 1) {
-                if (data.pietanze_page > 1) {
-                    const btnPrecedente = document.createElement('button');
-                    btnPrecedente.type = 'button';
-                    btnPrecedente.className = 'bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300';
-                    btnPrecedente.textContent = '← Precedente';
-                    btnPrecedente.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page - 1);
-                    pulsantiDiv.appendChild(btnPrecedente);
-                }
+        if (data.total_pietanze_pages > 1) {
+            // Pulsante Precedente
+            if (data.pietanze_page > 1) {
+                const btnPrecedente = document.createElement('button');
+                btnPrecedente.type = 'button';
+                btnPrecedente.className = 'bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300';
+                btnPrecedente.textContent = '← Precedente';
+                btnPrecedente.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page - 1);
+                pulsantiDiv.appendChild(btnPrecedente);
+            }
 
-                if (data.pietanze_page < data.total_pietanze_pages) {
-                    const btnSuccessivo = document.createElement('button');
-                    btnSuccessivo.type = 'button';
-                    btnSuccessivo.className = 'bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600';
-                    btnSuccessivo.textContent = 'Successivo →';
-                    btnSuccessivo.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page + 1);
-                    pulsantiDiv.appendChild(btnSuccessivo);
-                }
+            // Pulsante Successivo
+            if (data.pietanze_page < data.total_pietanze_pages) {
+                const btnSuccessivo = document.createElement('button');
+                btnSuccessivo.type = 'button';
+                btnSuccessivo.className = 'bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600';
+                btnSuccessivo.textContent = 'Successivo →';
+                btnSuccessivo.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page + 1);
+                pulsantiDiv.appendChild(btnSuccessivo);
             }
         }
     }
