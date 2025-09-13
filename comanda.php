@@ -307,6 +307,8 @@ if (isset($_GET['error'])) {
             margin-left: 5px;
         }
         
+        .messaggio-temporaneo { opacity: 0; }
+        
         @media (max-width: 640px) {
             .btn-categoria { min-height: 32px; font-size: 0.75rem; }
             .btn-action { min-height: 24px; min-width: 24px; font-size: 12px; }
@@ -465,10 +467,11 @@ if (isset($_GET['error'])) {
                     <h3 class="font-bold text-md mb-3">📋 Categorie</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                         <?php foreach ($categorie as $cat): ?>
-                            <a href="<?php echo createUrl(['categoria' => $cat, 'pietanze_page' => 1]); ?>"
-                               class="btn-categoria <?php echo $cat === $categoria_selezionata ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'; ?> text-white px-3 py-2 rounded font-medium text-sm text-center">
+                            <button type="button"
+                                    onclick="cambiaCategoria('<?php echo htmlspecialchars($cat, ENT_QUOTES); ?>')"
+                                    class="btn-categoria <?php echo $cat === $categoria_selezionata ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'; ?> text-white px-3 py-2 rounded font-medium text-sm text-center">
                                 <?php echo htmlspecialchars($cat); ?>
-                            </a>
+                            </button>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -528,15 +531,7 @@ if (isset($_GET['error'])) {
                                         Mostrando <?php echo count($pietanze_paginata); ?> di <?php echo $total_pietanze; ?> pietanze
                                     </div>
                                     <div class="flex gap-2">
-                                        <?php if ($pietanze_page > 1): ?>
-                                            <a href="<?php echo createUrl(['pietanze_page' => $pietanze_page - 1]); ?>" 
-                                               class="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300">← Precedente</a>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($pietanze_page < $total_pietanze_pages): ?>
-                                            <a href="<?php echo createUrl(['pietanze_page' => $pietanze_page + 1]); ?>" 
-                                               class="bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">Successivo →</a>
-                                        <?php endif; ?>
+                                        <!-- I pulsanti saranno sostituiti da JavaScript -->
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -725,7 +720,6 @@ let contatori = {};
 
 // *** FUNZIONI AJAX PER MENU ***
 function aggiornaMenuAjax(prenotazioneId, menuId, azione) {
-    // Disabilita i pulsanti durante la richiesta
     const btnAggiungi = document.getElementById(`btn-aggiungi-${menuId}`);
     const btnRimuovi = document.getElementById(`btn-rimuovi-${menuId}`);
     
@@ -746,13 +740,9 @@ function aggiornaMenuAjax(prenotazioneId, menuId, azione) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Aggiorna l'interfaccia con i nuovi dati
             aggiornaInterfacciaMenu(data.data);
-            
-            // Mostra messaggio di successo temporaneo
             mostraMessaggioTemporaneo(data.message, 'success');
         } else {
-            // Mostra messaggio di errore
             mostraMessaggioTemporaneo(data.message, 'error');
         }
     })
@@ -761,26 +751,22 @@ function aggiornaMenuAjax(prenotazioneId, menuId, azione) {
         mostraMessaggioTemporaneo('Errore di connessione', 'error');
     })
     .finally(() => {
-        // Riabilita i pulsanti
         if (btnAggiungi) btnAggiungi.classList.remove('loading');
         if (btnRimuovi) btnRimuovi.classList.remove('loading');
     });
 }
 
 function aggiornaInterfacciaMenu(data) {
-    // Aggiorna il badge dei menu base disponibili
     const menuBaseBadge = document.getElementById('menu-base-badge');
     if (menuBaseBadge) {
         menuBaseBadge.textContent = `${data.menu_base_disponibili} persone`;
     }
 
-    // Aggiorna il contatore dei menu base rimanenti
     const menuBaseRimanenti = document.getElementById('menu-base-rimanenti');
     if (menuBaseRimanenti) {
         menuBaseRimanenti.textContent = data.menu_base_disponibili;
     }
 
-    // Aggiorna il totale sostituzioni
     const totaleSostituzioni = document.getElementById('totale-sostituzioni');
     const sostituzioniInfo = document.getElementById('sostituzioni-info');
     if (totaleSostituzioni) {
@@ -796,7 +782,6 @@ function aggiornaInterfacciaMenu(data) {
         }
     }
 
-    // Aggiorna le quantità e stati dei pulsanti per tutti i menu alternativi
     Object.keys(data.menu_assegnati).forEach(menuId => {
         const quantitaSpan = document.getElementById(`quantita-menu-${menuId}`);
         const btnAggiungi = document.getElementById(`btn-aggiungi-${menuId}`);
@@ -806,7 +791,6 @@ function aggiornaInterfacciaMenu(data) {
             quantitaSpan.textContent = data.menu_assegnati[menuId];
         }
         
-        // Aggiorna stato pulsante rimuovi
         if (btnRimuovi) {
             if (data.menu_assegnati[menuId] <= 0) {
                 btnRimuovi.classList.add('opacity-50', 'cursor-not-allowed');
@@ -817,7 +801,6 @@ function aggiornaInterfacciaMenu(data) {
             }
         }
         
-        // Aggiorna stato pulsante aggiungi
         if (btnAggiungi) {
             if (data.menu_base_disponibili <= 0) {
                 btnAggiungi.classList.add('opacity-50', 'cursor-not-allowed');
@@ -829,7 +812,6 @@ function aggiornaInterfacciaMenu(data) {
         }
     });
 
-    // Aggiorna anche i menu che potrebbero avere quantità 0
     document.querySelectorAll('[id^="quantita-menu-"]').forEach(element => {
         const menuId = element.id.replace('quantita-menu-', '');
         if (!data.menu_assegnati[menuId]) {
@@ -845,11 +827,9 @@ function aggiornaInterfacciaMenu(data) {
 }
 
 function mostraMessaggioTemporaneo(messaggio, tipo) {
-    // Rimuovi eventuali messaggi esistenti
     const messaggiEsistenti = document.querySelectorAll('.messaggio-temporaneo');
     messaggiEsistenti.forEach(msg => msg.remove());
 
-    // Crea il nuovo messaggio
     const div = document.createElement('div');
     div.className = `messaggio-temporaneo fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${
         tipo === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
@@ -858,17 +838,144 @@ function mostraMessaggioTemporaneo(messaggio, tipo) {
 
     document.body.appendChild(div);
 
-    // Anima l'entrata
     setTimeout(() => div.style.opacity = '1', 10);
 
-    // Rimuovi dopo 3 secondi
     setTimeout(() => {
         div.style.opacity = '0';
         setTimeout(() => div.remove(), 300);
     }, 3000);
 }
 
-// *** FUNZIONI PER GESTIRE LE SEZIONI (invariate) ***
+// *** FUNZIONI PER PAGINAZIONE AJAX PIETANZE ***
+function caricaPietanzeAjax(categoria, pagina = 1) {
+    const contenitorePietanze = document.querySelector('.categoria .grid');
+    if (contenitorePietanze) {
+        contenitorePietanze.innerHTML = '<div class="col-span-full text-center py-8"><div class="text-gray-500">Caricamento...</div></div>';
+    }
+
+    const params = new URLSearchParams({
+        categoria: categoria,
+        pietanze_page: pagina,
+        ajax: '1',
+        id: document.querySelector('input[name="prenotazione_id"]').value
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('page')) params.append('page', urlParams.get('page'));
+
+    fetch('carica_pietanze.php?' + params.toString())
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                aggiornaInterfacciaPietanze(data.data);
+            } else {
+                console.error('Errore nel caricamento:', data.message);
+                mostraMessaggioTemporaneo('Errore nel caricamento delle pietanze', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Errore AJAX:', error);
+            mostraMessaggioTemporaneo('Errore di connessione', 'error');
+        });
+}
+
+function aggiornaInterfacciaPietanze(data) {
+    const contenitorePietanze = document.querySelector('.categoria .grid');
+    const headerCategoria = document.querySelector('.categoria h3');
+    const infoPaginazione = document.querySelector('.categoria .flex.justify-between .text-sm');
+    const paginazioneContainer = document.querySelector('.categoria .mt-4.flex.justify-between');
+
+    if (!contenitorePietanze || !data.pietanze) return;
+
+    if (headerCategoria && data.categoria_selezionata) {
+        headerCategoria.innerHTML = `
+            ${escapeHtml(data.categoria_selezionata)} 
+            <span class="text-sm font-normal text-gray-600">
+                (${data.total_pietanze} pietanze)
+            </span>
+        `;
+    }
+
+    if (infoPaginazione && data.total_pietanze_pages > 1) {
+        infoPaginazione.textContent = `Pagina ${data.pietanze_page} di ${data.total_pietanze_pages}`;
+    }
+
+    contenitorePietanze.innerHTML = '';
+    data.pietanze.forEach(pietanza => {
+        const div = document.createElement('div');
+        div.className = 'pietanza-item bg-gray-50 rounded border p-3';
+        div.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <div class="font-medium text-sm flex-1 pr-2">${escapeHtml(pietanza.nome)}</div>
+                <div class="flex items-center gap-1">
+                    <button type="button" onclick="decrementaPietanza(${pietanza.id}, '${pietanza.nome.replace(/'/g, "\\'")}', '${pietanza.categoria.replace(/'/g, "\\'")}'); event.preventDefault();" 
+                            class="btn-action bg-red-500 text-white rounded hover:bg-red-600">−</button>
+                    <span id="counter-${pietanza.id}" class="counter-display bg-white px-2 py-1 rounded border text-center">0</span>
+                    <button type="button" onclick="incrementaPietanza(${pietanza.id}, '${pietanza.nome.replace(/'/g, "\\'")}', '${pietanza.categoria.replace(/'/g, "\\'")}'); event.preventDefault();" 
+                            class="btn-action bg-green-500 text-white rounded hover:bg-green-600">+</button>
+                </div>
+            </div>
+            <input type="text" id="note-${pietanza.id}" placeholder="Note..." 
+                   class="w-full text-sm border px-3 py-2 rounded bg-white"
+                   onkeypress="if(event.key==='Enter') { incrementaPietanza(${pietanza.id}, '${pietanza.nome.replace(/'/g, "\\'")}', '${pietanza.categoria.replace(/'/g, "\\'")}'); event.preventDefault(); }">
+        `;
+        contenitorePietanze.appendChild(div);
+
+        const contatore = contatori[pietanza.id] || 0;
+        const counterElement = document.getElementById(`counter-${pietanza.id}`);
+        if (counterElement) {
+            counterElement.textContent = contatore;
+        }
+    });
+
+    if (paginazioneContainer) {
+        const conteggioDiv = paginazioneContainer.querySelector('.text-sm.text-gray-700');
+        const pulsantiDiv = paginazioneContainer.querySelector('.flex.gap-2');
+
+        if (conteggioDiv) {
+            conteggioDiv.textContent = `Mostrando ${data.pietanze.length} di ${data.total_pietanze} pietanze`;
+        }
+
+        if (pulsantiDiv) {
+            pulsantiDiv.innerHTML = '';
+
+            if (data.pietanze_page > 1) {
+                const btnPrecedente = document.createElement('button');
+                btnPrecedente.className = 'bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300';
+                btnPrecedente.textContent = '← Precedente';
+                btnPrecedente.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page - 1);
+                pulsantiDiv.appendChild(btnPrecedente);
+            }
+
+            if (data.pietanze_page < data.total_pietanze_pages) {
+                const btnSuccessivo = document.createElement('button');
+                btnSuccessivo.className = 'bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600';
+                btnSuccessivo.textContent = 'Successivo →';
+                btnSuccessivo.onclick = () => caricaPietanzeAjax(data.categoria_selezionata, data.pietanze_page + 1);
+                pulsantiDiv.appendChild(btnSuccessivo);
+            }
+        }
+    }
+}
+
+function cambiaCategoria(categoria) {
+    document.querySelectorAll('.btn-categoria').forEach(btn => {
+        btn.classList.remove('bg-blue-700');
+        btn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+    });
+    
+    const btnCategoria = Array.from(document.querySelectorAll('.btn-categoria')).find(btn => 
+        btn.textContent.trim() === categoria
+    );
+    if (btnCategoria) {
+        btnCategoria.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        btnCategoria.classList.add('bg-blue-700');
+    }
+
+    caricaPietanzeAjax(categoria, 1);
+}
+
+// *** FUNZIONI PER GESTIRE LE SEZIONI ***
 function toggleSection(sectionName) {
     const content = document.getElementById(sectionName + '-content');
     const icon = document.getElementById(sectionName + '-icon');
@@ -884,7 +991,7 @@ function toggleSection(sectionName) {
     }
 }
 
-// *** FUNZIONI PER ORDINI (invariate) ***
+// *** FUNZIONI PER ORDINI ***
 function incrementaPietanza(id, nome, categoria) {
     const noteInput = document.getElementById('note-' + id);
     const note = noteInput ? noteInput.value.trim() : '';
@@ -999,7 +1106,7 @@ function salvaOrdine() {
     return true;
 }
 
-// *** FUNZIONI PER STAMPA (invariate) ***
+// *** FUNZIONI PER STAMPA ***
 function toggleCategoriaStampa(categoria) {
     const contenuto = document.getElementById('contenuto-stampa-' + categoria);
     const freccia = document.getElementById('freccia-stampa-' + categoria);
@@ -1103,8 +1210,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inizializza contatori per le pietanze visibili nella pagina corrente
     document.querySelectorAll('[id^="counter-"]').forEach(counter => {
         const pietanzaId = counter.id.replace('counter-', '');
-        contatori[pietanzaId] = 0;
-        counter.textContent = '0';
+        if (!contatori[pietanzaId]) {
+            contatori[pietanzaId] = 0;
+        }
+        counter.textContent = contatori[pietanzaId];
     });
     
     // Imposta la sezione "Ordini" come aperta di default
@@ -1115,11 +1224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ordiniContent.classList.add('expanded');
         ordiniIcon.style.transform = 'rotate(180deg)';
     }
-    
-    // Imposta opacità 0 per i messaggi temporanei
-    const style = document.createElement('style');
-    style.textContent = '.messaggio-temporaneo { opacity: 0; }';
-    document.head.appendChild(style);
 });
 </script>
 </body>
